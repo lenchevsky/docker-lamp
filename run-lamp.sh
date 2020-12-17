@@ -26,7 +26,7 @@ if [ $LOG_LEVEL != 'warn' ]; then
 fi
 
 # enable php short tags:
-/bin/sed -i "s/short_open_tag\ \=\ Off/short_open_tag\ \=\ On/g" /etc/php/7.0/apache2/php.ini
+/bin/sed -i "s/short_open_tag\ \=\ Off/short_open_tag\ \=\ On/g" /etc/php/7.4/apache2/php.ini
 
 # stdout server info:
 if [ ! $LOG_STDOUT ]; then
@@ -34,8 +34,8 @@ cat << EOB
     
     **********************************************
     *                                            *
-    *    Docker image: fauria/lamp               *
-    *    https://github.com/fauria/docker-lamp   *
+    *    This is a Pre-Built WP container        *
+    *      based on fauria/lamp image            *
     *                                            *
     **********************************************
 
@@ -53,13 +53,20 @@ else
 fi
 
 # Set PHP timezone
-/bin/sed -i "s/\;date\.timezone\ \=/date\.timezone\ \=\ ${DATE_TIMEZONE}/" /etc/php/7.0/apache2/php.ini
+/bin/sed -i "s/\;date\.timezone\ \=/date\.timezone\ \=\ ${DATE_TIMEZONE}/" /etc/php/7.4/apache2/php.ini
 
 # Run Postfix
 /usr/sbin/postfix start
 
 # Run MariaDB
 /usr/bin/mysqld_safe --timezone=${DATE_TIMEZONE}&
+
+echo "=> Waiting till MySQL is started"
+    mysqladmin --wait=30 ping > /dev/null 2>&1
+
+mysql -uroot -e "CREATE DATABASE IF NOT EXISTS wordpress;";
+mysql -uroot -e "CREATE USER IF NOT EXISTS 'username'@'%' IDENTIFIED BY 'password';"
+mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'username'@'%' WITH GRANT OPTION;"
 
 # Run Apache:
 if [ $LOG_LEVEL == 'debug' ]; then
